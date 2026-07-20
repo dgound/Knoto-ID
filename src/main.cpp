@@ -30,8 +30,9 @@ string debug_filename="debug";
 bool flag_cyclic=false;
 bool flag_3d_reduction=true;
 bool flag_simplify_diagram=true;
-bool flag_planar=false; //diagram is on the plane (not the sphere) 
-bool flag_arrow_polynomial=false; 
+bool flag_planar=false; //diagram is on the plane (not the sphere)
+bool flag_arrow_polynomial=false;
+bool flag_double_branched_cover=false; //evaluate the double branched cover invariant (planar knotoids only)
 long max_nb_random_moves_III=100000;
 long max_nb_unsuccessfull_random_moves_III=2000;//max number of move without improvement.
 int nb_helper_beads_per_segment=0;// for hoomd debug output, add nb_helper_beads_per_segment per segments 
@@ -164,6 +165,10 @@ void display_usage(char **argv,bool flag_help_all=false){
   cerr<<"           evaluate the arrow polynomial instead of Jones polynomial"<<endl;
   cerr<<"           for knotoids and loop arrow polynomial instead of Turaev loop bracket."<<endl;
   cerr<<"           This option is only relevant for open curves (--closure-method=open)."<<endl;
+  cerr<<"      --double-branched-cover"<<endl;
+  cerr<<"           evaluate the double branched cover invariant instead of the Jones"<<endl;
+  cerr<<"           polynomial. Only works for planar knotoids: requires --planar and an"<<endl;
+  cerr<<"           open, non-cyclic curve/diagram (--closure-method=open)."<<endl;
   cerr<<endl;
   cerr<<"      --nb-moves-III=N"<<endl;
   cerr<<"           max number of iterations for simplification with random Reidemeister"<<endl;
@@ -296,6 +301,7 @@ int main(int argc, char **argv)
     { "projections-list", required_argument, NULL, 5 },
     { "output-diagram-format", required_argument, NULL, 10 },
     { "arrow-polynomial", no_argument, NULL, 12 },
+    { "double-branched-cover", no_argument, NULL, 14 },
     { NULL, no_argument, NULL, 0 }
   };
   opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
@@ -407,6 +413,9 @@ int main(int argc, char **argv)
     case 12:
       flag_arrow_polynomial=true;
       break;
+    case 14:
+      flag_double_branched_cover=true;
+      break;
     case 'h':   /* fall-through is intentional */
       display_usage(argv);
       exit(0);
@@ -444,7 +453,15 @@ int main(int argc, char **argv)
   if(flag_planar&&flag_cyclic)
     {
       cerr<<"Ignoring argument --planar: for cyclic curves, projection on a sphere and on a plane produce the same classical Jones polynomial."<<endl;
-      flag_planar=false;      
+      flag_planar=false;
+    }
+  if(flag_double_branched_cover&&(flag_cyclic||!flag_planar))
+    {
+      cerr<<"*********************************************************"<<endl;
+      cerr<<"ERROR: --double-branched-cover only works for planar knotoids"<<endl;
+      cerr<<"(requires --planar and an open, non-cyclic curve/diagram)."<<endl;
+      cerr<<"*********************************************************"<<endl;
+      exit(1);
     }
   if(projectionlist_filename!=""&&flag_cyclic&&(closure_method=="direct"||closure_method=="straight")) //"straight" for backward compatitibility
     {
@@ -843,24 +860,26 @@ int main(int argc, char **argv)
 	  //////////jones//////////////
 	  if(output_filename_jones!="")
 	    {      
-	      PolynomialInvariant jones(diagram,flag_planar,flag_arrow_polynomial,flag_debug);
-	      jones.set_timeout(timeout);
+	      std::unique_ptr<PolynomialInvariant> jones;
+	      if(!flag_double_branched_cover){jones.reset(new PolynomialInvariant(diagram,flag_planar,flag_arrow_polynomial,flag_debug));jones->set_timeout(timeout);}
 	      Polynomial jones_polynomial;      
 	      time_t t0=time(NULL);
 	      clock_t clock_t0 = clock();      
 	      /////////////jone bgl
 	      try
 		{
-		  if(jones_method=="simple")
-		    jones_polynomial=jones.get_polynomial_simple();
+		  if(flag_double_branched_cover)
+		    jones_polynomial=double_branched_cover_polynomial(diagram,timeout);
+		  else if(jones_method=="simple")
+		    jones_polynomial=jones->get_polynomial_simple();
 		  else if(jones_method=="recursive")
-		    jones_polynomial=jones.get_polynomial_recursive();
+		    jones_polynomial=jones->get_polynomial_recursive();
 		  else if(jones_method=="recursive-crossing-order")
-		    jones_polynomial=jones.get_polynomial_recursive("crossing_order");
+		    jones_polynomial=jones->get_polynomial_recursive("crossing_order");
 		  else if(jones_method=="recursive-arc-order")
-		    jones_polynomial=jones.get_polynomial_recursive("arc_order");
+		    jones_polynomial=jones->get_polynomial_recursive("arc_order");
 		  else if(jones_method=="recursive-region-order")
-		    jones_polynomial=jones.get_polynomial_recursive("region_order");
+		    jones_polynomial=jones->get_polynomial_recursive("region_order");
 		  else
 		    {
 		      cerr<<"********************************************************"<<endl;	  
@@ -1087,22 +1106,24 @@ int main(int argc, char **argv)
 		  //////////evaluate jones//////////////
 		  if(output_filename_jones!=""||output_filename_diagram!="")
 		    {      
-		      PolynomialInvariant jones(diagram,flag_planar,flag_arrow_polynomial,flag_debug);
-		      jones.set_timeout(timeout);
+		      std::unique_ptr<PolynomialInvariant> jones;
+		      if(!flag_double_branched_cover){jones.reset(new PolynomialInvariant(diagram,flag_planar,flag_arrow_polynomial,flag_debug));jones->set_timeout(timeout);}
 		      Polynomial jones_polynomial;      
 		      /////////////jone bgl
 		      try
 			{
-			  if(jones_method=="simple")
-			    jones_polynomial=jones.get_polynomial_simple();
+			  if(flag_double_branched_cover)
+			    jones_polynomial=double_branched_cover_polynomial(diagram,timeout);
+			  else if(jones_method=="simple")
+			    jones_polynomial=jones->get_polynomial_simple();
 			  else if(jones_method=="recursive")
-			    jones_polynomial=jones.get_polynomial_recursive("default",true);
+			    jones_polynomial=jones->get_polynomial_recursive("default",true);
 			  else if(jones_method=="recursive-crossing-order")
-			    jones_polynomial=jones.get_polynomial_recursive("crossing_order",true);
+			    jones_polynomial=jones->get_polynomial_recursive("crossing_order",true);
 			  else if(jones_method=="recursive-arc-order")
-			    jones_polynomial=jones.get_polynomial_recursive("arc_order",true);
+			    jones_polynomial=jones->get_polynomial_recursive("arc_order",true);
 			  else if(jones_method=="recursive-region-order")
-			    jones_polynomial=jones.get_polynomial_recursive("region_order",true);
+			    jones_polynomial=jones->get_polynomial_recursive("region_order",true);
 			  else
 			    {
 			      cerr<<"********************************************************"<<endl;	  
@@ -1329,24 +1350,26 @@ int main(int argc, char **argv)
 	  //////////jones//////////////
 	  if(output_filename_jones!="")
 	    {      
-	      PolynomialInvariant jones(diagram,flag_planar,flag_arrow_polynomial,flag_debug);
-	      jones.set_timeout(timeout);
+	      std::unique_ptr<PolynomialInvariant> jones;
+	      if(!flag_double_branched_cover){jones.reset(new PolynomialInvariant(diagram,flag_planar,flag_arrow_polynomial,flag_debug));jones->set_timeout(timeout);}
 	      Polynomial jones_polynomial;      
 	      time_t t0=time(NULL);
 	      clock_t clock_t0 = clock();      
 	      /////////////jone bgl
 	      try
 		{
-		  if(jones_method=="simple")
-		    jones_polynomial=jones.get_polynomial_simple();
+		  if(flag_double_branched_cover)
+		    jones_polynomial=double_branched_cover_polynomial(diagram,timeout);
+		  else if(jones_method=="simple")
+		    jones_polynomial=jones->get_polynomial_simple();
 		  else if(jones_method=="recursive")
-		    jones_polynomial=jones.get_polynomial_recursive();
+		    jones_polynomial=jones->get_polynomial_recursive();
 		  else if(jones_method=="recursive-crossing-order")
-		    jones_polynomial=jones.get_polynomial_recursive("crossing_order");
+		    jones_polynomial=jones->get_polynomial_recursive("crossing_order");
 		  else if(jones_method=="recursive-arc-order")
-		    jones_polynomial=jones.get_polynomial_recursive("arc_order");
+		    jones_polynomial=jones->get_polynomial_recursive("arc_order");
 		  else if(jones_method=="recursive-region-order")
-		    jones_polynomial=jones.get_polynomial_recursive("region_order");
+		    jones_polynomial=jones->get_polynomial_recursive("region_order");
 		  else
 		    {
 		      cerr<<"********************************************************"<<endl;	  

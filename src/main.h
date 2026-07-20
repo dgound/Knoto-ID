@@ -20,11 +20,13 @@
 #include <cstdlib>
 #include <string>
 #include <map>
+#include <memory>
 #include <ctime>
 #include <getopt.h>
 #include <Polygon.hh>
 #include <PlanarDiagram.hh>
 #include <PolynomialInvariant.hh>
+#include <DoubleBranchedCover.hh>
 #include <Version.h>
 #include <Random.hh>
 #include <KnotoidNames.hh>
