@@ -98,6 +98,46 @@ make install
 * Fedora 25: g++ 6.4.1, cmake 3.9.1 boost 1.60.
 * Fedora 25: MinGW Windows cross-compiler 6.4.0, cmake 3.9.1, boost 1.60.
 
+### Python module
+
+The `python/` directory contains an optional Python package built with
+[pybind11](https://github.com/pybind/pybind11). It provides a high-level
+`KnotoID` class for analysing 3D curves (random projections, knotted core /
+all-subchains analysis, and a plotnine-based `plot_knotted_core` reproducing
+the fingerprint and disk plots of the R scripts), and a compiled module
+`knotoID_cpp` exposing the low-level `Polygon`, `PlanarDiagram`,
+`PolynomialInvariant` and `Polynomial` classes together with PD-code
+input/export, the double branched cover invariant, and an optional Knoodle
+interoperability bridge.
+
+Dependencies:
+* a c++17 compiler and boost (same as above)
+* Python 3 with `pip`
+* Python packages: `pybind11` (build), and `numpy`, `pandas`, `matplotlib`,
+  `plotnine` (runtime). `plot_knotted_core` requires `matplotlib` and
+  `plotnine`; the Knoodle bridge additionally requires `pyknoodle`.
+
+To build and install (boost is located automatically; set `BOOST_ROOT` if it
+is installed in a non-standard location):
+```
+cd python
+pip install .
+```
+
+Quick check (the 3_1 planar knotoid, from a PD code):
+```python
+import knotoID_cpp as kn
+
+# the four crossings, then the arc labels touching the outer region
+# (the "r[...]" arcs of the PD code)
+diagram = kn.PlanarDiagram(True)   # flag_planar = True
+diagram.load_from_pd_code([[0, 5, 1, 6], [4, 1, 5, 2], [7, 2, 8, 3], [3, 6, 4, 7]],
+                          [1, 6, 4])
+
+print(kn.PolynomialInvariant(diagram, True).get_polynomial_simple())
+print(kn.double_branched_cover_polynomial(diagram))
+```
+
 ## Usage
 
 Detailed usage instructions can be found in the user guide
