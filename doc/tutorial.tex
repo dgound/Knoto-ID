@@ -490,6 +490,17 @@ The last line is of particular interest as it contains the number of crossings i
 
 Finally, note that if a polynomial invariant is not found in the knot(oid) names database specified with  \lstinline{--names-db}, it will take the special knot type \lstinline{UNKNOWN}.
 
+\subsubsection{Double branched cover invariant}
+For planar knotoids, \lstinline{polynomial_invariant} can compute the double branched cover invariant instead of the Turaev loop bracket, using the option \lstinline{--double-branched-cover} (see section ``\ref{sec:theory:jones:dbc} \nameref{sec:theory:jones:dbc}'' for the definition). This invariant is only defined for planar knotoids, so it requires \lstinline{--planar} and an open curve. For example, using the planar knotoid diagram \lstinline{3_1} given as a PD code\footnote{see section ``\ref{sec:format:pd} \nameref{sec:format:pd}'' for more information on the file format.} in \lstinline{examples/3_1_diagram_open_planar_PD.txt}:
+\begin{lstlisting}
+$ bin/polynomial_invariant -F pd --planar \
+  --double-branched-cover examples/3_1_diagram_open_planar_PD.txt
+\end{lstlisting}
+the double branched cover invariant, a polynomial in the variables $A$ and $v$, is written to standard output:
+\begin{lstlistingsmall}
+Polynomial:  + A^(8)*v + A^(16)*v - 2*A^(20)*v + A^(20)*v^(3) + 3*A^(24)*v - 2*A^(24)*v^(3) - 2*A^(28)*v + A^(28)*v^(3)
+\end{lstlistingsmall}
+
 \subsection{Knotted core}
 \subsubsection{Using open curves as input}
 The program \lstinline{knotted_core} evaluates the knotted core of a piecewise linear curve. To print a list of all possible options

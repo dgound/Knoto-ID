@@ -1,0 +1,193 @@
+% Copyright (C) 2017 by SIB Swiss Institute of Bioinformatics, Julien Dorier and Dimos Goundaroulis.
+%
+% This file is part of project Knoto-ID.
+%
+% Knoto-ID is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 2 of the License, or
+% (at your option) any later version.
+%
+% Knoto-ID is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with Knoto-ID.  If not, see <http://www.gnu.org/licenses/>.
+
+\section{\label{sec:python}Python module}
+In addition to the command line executables, {\it Knoto-ID} provides an optional Python module. It gives access from Python to the polynomial invariants, the knotted core and all-subchains analysis, the reading and writing of PD codes, the double branched cover invariant, the plotting of fingerprint and disk matrices, and interoperability with Knoodle\footnote{\url{https://github.com/Bioinformatics-and-Biophysics-Lab/Knoodle}, a Python package for the analysis of knots and knotoids.}.
+
+The module is organised in two layers:
+\begin{itemize}
+\item a high-level Python package \lstinline{KnotoID}, providing the \lstinline{KnotoID} class. It analyses a curve given as a list of points in 3D, in the same spirit as the \lstinline{polynomial_invariant} and \lstinline{knotted_core} executables, and it can plot fingerprint and disk matrices.
+\item a low-level compiled module \lstinline{knotoID_cpp}, built with pybind11. It exposes the underlying C++ classes (\lstinline{Polygon}, \lstinline{PlanarDiagram}, \lstinline{PolynomialInvariant} and \lstinline{Polynomial}) and the double branched cover functions, and lets you work directly with knot(oid) diagrams.
+\end{itemize}
+
+\subsection{Installation}
+The Python module is located in the \lstinline{python/} directory of the source distribution. Building it requires:
+\begin{itemize}
+\item a C++ compiler supporting C++17,
+\item boost (headers and boost-regex),
+\item {\ttfamily pybind11} (used at build time).
+\end{itemize}
+The following Python packages are used at run time and are installed automatically:
+\begin{itemize}
+\item {\ttfamily numpy} and {\ttfamily pandas},
+\item {\ttfamily matplotlib} and {\ttfamily plotnine} (used by \lstinline{plot_knotted_core}).
+\end{itemize}
+The {\ttfamily pyknoodle} package (imported as {\ttfamily knoodle}) is optional and only required for the Knoodle interoperability functions (section ``\ref{sec:python:knoodle} \nameref{sec:python:knoodle}'').
+
+To build and install, run the following from the \lstinline{python/} directory:
+\begin{lstlisting}
+$ cd python
+$ pip install .
+\end{lstlisting}
+Boost is located automatically (searching conda, Homebrew, pkg-config and the default system paths). If boost is installed in a non-standard location, set the \lstinline{BOOST_ROOT} environment variable before running \lstinline{pip}.
+
+After installation, the high-level class is imported with
+\begin{lstlisting}
+from KnotoID import KnotoID
+\end{lstlisting}
+and the low-level classes and functions with
+\begin{lstlisting}
+import knotoID_cpp
+\end{lstlisting}
+
+\subsection{\label{sec:python:knotoid}The KnotoID class}
+The \lstinline{KnotoID} class analyses a single curve given in 3D. Its constructor accepts the following arguments (all optional):
+\begin{description}
+\item[\lstinline{seed}]\hfill\\
+  Seed for the random number generator. If not given, the current time is used.
+\item[\lstinline{nb_projections}]\hfill\\
+  Number of random projection directions used to project the curve.
+\item[\lstinline{projections_list}]\hfill\\
+  Use \lstinline{'internal'} to use the 100 built-in projection directions, or \lstinline{'precomputed'} to use the directions given in \lstinline{precomputed_projections}.
+\item[\lstinline{precomputed_projections}]\hfill\\
+  An \lstinline{(n,4)} array whose first three columns are projection directions and whose fourth column contains the corresponding weights (used with \lstinline{projections_list='precomputed'}).
+\item[\lstinline{closure_method}]\hfill\\
+  \lstinline{'open'} for an open curve (knotoid, the default), or \lstinline{'direct'} or \lstinline{'rays'} for a closed curve\footnote{see the description of \lstinline{--closure-method} in section ``\ref{sec:reference} \nameref{sec:reference}''.}.
+\item[\lstinline{planar}]\hfill\\
+  Evaluate the invariant for a knotoid on the plane instead of on the sphere.
+\item[\lstinline{arrow_polynomial}]\hfill\\
+  Evaluate the arrow polynomial (or loop arrow polynomial with \lstinline{planar}) instead of the Jones polynomial.
+\item[\lstinline{debug}]\hfill\\
+  Print the diagnostic output of the C++ core. By default this output is suppressed.
+\end{description}
+
+\subsubsection{Analysing a curve}
+The method \lstinline{analyze_curve(matrix, ...)} projects the curve along the projection directions, computes the dominant polynomial invariant of each projection and returns a {\ttfamily pandas} \lstinline{DataFrame} with the distribution of knot(oid) types. The curve is passed as an \lstinline{(n,3)} {\ttfamily numpy} array.
+\begin{lstlisting}
+import numpy as np
+from KnotoID import KnotoID
+
+curve = np.loadtxt("examples/3_1m.xyz")   # an (n,3) array of points
+kid = KnotoID(nb_projections=100, seed=1, closure_method="open")
+print(kid.analyze_curve(curve))
+\end{lstlisting}
+which prints the distribution of dominant invariants over the projections:
+\begin{lstlistingsmall}
+        Name  Frequency                    Polynomial
+0       3_1m       0.93  - A^(-16) + A^(-12) + A^(-4)
+1  2_1s|2_1m       0.06   - A^(-10) + A^(-6) + A^(-4)
+2        0_1       0.01                           + 1
+\end{lstlistingsmall}
+Here the curve is identified as the knotoid \lstinline{3_1m} in 93\% of the projections. The main optional arguments of \lstinline{analyze_curve} are \lstinline{reduction_3d} (simplify the 3D curve before projecting, default \lstinline{True}), \lstinline{simplify_diagram} (simplify the projected diagram, default \lstinline{True}) and \lstinline{timeout} (per-projection timeout in seconds).
+
+\subsubsection{\label{sec:python:knottedcore}Knotted core and subchains}
+The method \lstinline{knotted_core(matrix, ...)} computes the knotted core (the shortest knotted subchain) and, optionally, the analysis of all subchains. It returns a tuple \lstinline{(knotted_core, all_chains, search_path)} of {\ttfamily pandas} \lstinline{DataFrame} objects (the last two are \lstinline{None} unless the corresponding options are enabled).
+\begin{lstlisting}
+core, chains, path = kid.knotted_core(curve,
+                                      all_chains=True,
+                                      kc_search_path=True)
+\end{lstlisting}
+The most useful options are \lstinline{all_chains} (also analyse every subchain, needed for plotting), \lstinline{kc_search_path} (also record the search path used to locate the knotted core) and \lstinline{timeout}. The results are also stored on the instance as \lstinline{kid.knotted_core_analysis}, \lstinline{kid.all_chains_analysis} and \lstinline{kid.kc_search_path_analysis}.
+
+\subsubsection{Plotting fingerprint and disk matrices}
+The method \lstinline{plot_knotted_core(output, ...)} plots the subchain analysis, reproducing the output of the R script \lstinline{scripts/plot_knotted_core.R}. It requires \lstinline{knotted_core} to have been called with \lstinline{all_chains=True}. The argument \lstinline{output} is the name of the image file to write.
+\begin{lstlisting}
+kid.knotted_core(curve, all_chains=True, kc_search_path=True)
+kid.plot_knotted_core("fingerprint.png",
+                      search_path=True,
+                      boundaries=True)
+\end{lstlisting}
+The behaviour depends on the following arguments:
+\begin{description}
+\item[\lstinline{cyclic}]\hfill\\
+  When \lstinline{False} (the default), plot a fingerprint matrix\cite{yeates, sulkowska2012, gound} of the start index versus the end index of each subchain (for open curves). When \lstinline{True}, plot a disk matrix\cite{rawdon} in polar coordinates, with the subchain length as radius and the position of the subchain as angle (for closed curves).
+\item[\lstinline{knotted_core}]\hfill\\
+  Overlay the knotted core (default \lstinline{True}).
+\item[\lstinline{search_path}]\hfill\\
+  Overlay the search path used to locate the knotted core. This requires \lstinline{knotted_core(..., kc_search_path=True)}.
+\item[\lstinline{boundaries}]\hfill\\
+  Draw boundary lines between regions of different knot(oid) type.
+\item[\lstinline{no_transparency}]\hfill\\
+  Draw all tiles fully opaque, instead of using the frequency of the dominant type as opacity.
+\end{description}
+In fingerprint mode the method returns a {\ttfamily plotnine} object, and in disk mode a {\ttfamily matplotlib} figure. The figure is written to \lstinline{output} in the format inferred from its extension.
+
+\subsection{\label{sec:python:cpp}The knotoID\_cpp module}
+The \lstinline{knotoID_cpp} module exposes the underlying C++ classes. It is useful when working directly with knot(oid) diagrams, for instance to load a diagram from a PD code and compute one of its invariants.
+
+The main classes are:
+\begin{description}
+\item[\lstinline{Polygon}]\hfill\\
+  A curve in 3D given as an \lstinline{(n,3)} {\ttfamily numpy} array, constructed with \lstinline{Polygon(points, flag_cyclic)}. Its main methods are \lstinline{set_closure(dx,dy,dz,method)}, \lstinline{simplify_polygon(dx,dy,dz)}, \lstinline{project(dx,dy,dz)} and \lstinline{get_planar_diagram(dx,dy,dz,flag_planar)}, which returns a \lstinline{PlanarDiagram}.
+\item[\lstinline{PlanarDiagram}]\hfill\\
+  A knot(oid) diagram, constructed with \lstinline{PlanarDiagram(flag_planar)}. It can be loaded from a PD code with \lstinline{load_from_pd_code} (section ``\ref{sec:python:pd} \nameref{sec:python:pd}'') or from an extended Gauss code string with \lstinline{load_from_string_extended_gauss_code}, and exported with \lstinline{to_pd_code}. Other methods include \lstinline{simplify}, \lstinline{get_nb_crossings}, \lstinline{get_writhe} and \lstinline{is_cyclic}.
+\item[\lstinline{PolynomialInvariant}]\hfill\\
+  Computes the polynomial invariant of a diagram. It is constructed from a \lstinline{PlanarDiagram} and the \lstinline{flag_planar} flag (with optional \lstinline{flag_arrow_polynomial}), and the invariant is obtained with \lstinline{get_polynomial_simple()} or \lstinline{get_polynomial_recursive()}. A timeout in seconds can be set with \lstinline{set_timeout}.
+\item[\lstinline{Polynomial}]\hfill\\
+  A (multivariate Laurent) polynomial, with \lstinline{to_string()} and the usual \lstinline{add} and \lstinline{multiply} operations.
+\end{description}
+The module also provides \lstinline{set_seed(seed)} to seed the random number generator.
+
+\subsection{\label{sec:python:pd}PD codes}
+A PD code is passed to \lstinline{load_from_pd_code(crossings, exterior_arcs=[])} as a nested list. Each element of \lstinline{crossings} is a list of exactly four arc labels describing one crossing, following the same 0-based KnotTheory convention as the \lstinline{pd} file format (section ``\ref{sec:format:pd} \nameref{sec:format:pd}''). PD codes carry no signs: which strand is the overpass is encoded by the order of the four labels. For a planar open knotoid, the arcs that touch the outer region (the arcs written as \lstinline{r[...]} in the file format) are passed in \lstinline{exterior_arcs}.
+
+For example, the planar knotoid \lstinline{3_1} stored in \lstinline{examples/3_1_diagram_open_planar_PD.txt} is loaded and its polynomial invariant computed as follows:
+\begin{lstlisting}
+import knotoID_cpp as kn
+
+diagram = kn.PlanarDiagram(True)          # flag_planar = True
+diagram.load_from_pd_code(
+    [[0, 5, 1, 6], [4, 1, 5, 2], [7, 2, 8, 3], [3, 6, 4, 7]],
+    [1, 6, 4])                            # arcs on the outer region
+
+print(kn.PolynomialInvariant(diagram, True).get_polynomial_simple())
+\end{lstlisting}
+which prints
+\begin{lstlistingsmall}
+<Polynomial: + A^(4) - A^(8) - A^(10)*v + A^(12) + A^(14)*v>
+\end{lstlistingsmall}
+The method \lstinline{to_pd_code()} returns the diagram back as a nested list of crossings.
+
+\subsection{\label{sec:python:dbc}Double branched cover}
+The double branched cover invariant (section ``\ref{sec:theory:jones:dbc} \nameref{sec:theory:jones:dbc}'') of a planar knotoid is available through the function \lstinline{double_branched_cover_polynomial}, which returns a \lstinline{Polynomial} in the variables $A$ and $v$. It comes in two forms.
+
+Given a \lstinline{PlanarDiagram} of a planar knotoid (for example the one loaded above):
+\begin{lstlisting}
+print(kn.double_branched_cover_polynomial(diagram))
+\end{lstlisting}
+Alternatively, from the extended oriented Gauss code of the knotoid, given as three lists: the crossing sequence \lstinline{gauss} (positive for an overpass, negative for an underpass), the sign \lstinline{signs} of each crossing, and the arc labels \lstinline{outer} that touch the outer region:
+\begin{lstlisting}
+poly = kn.double_branched_cover_polynomial([1, -2, -1, 2],
+                                           [-1, -1],
+                                           [0, 2, 3])
+print(poly)
+\end{lstlisting}
+which prints
+\begin{lstlistingsmall}
+<Polynomial: - A^(-16)*v + A^(-12)*v + A^(-4)*v>
+\end{lstlistingsmall}
+Both forms accept an optional \lstinline{timeout} argument (in seconds, \lstinline{0} means no timeout). The related function \lstinline{double_branched_cover_lift(gauss, signs, outer)} returns the lift itself (the knot in the solid torus) as a \lstinline{DBCLift} object.
+
+\subsection{\label{sec:python:knoodle}Interoperability with Knoodle}
+The module \lstinline{KnotoID.knoodle_bridge} converts diagrams between {\it Knoto-ID} and Knoodle. Both use a 0-based PD code in the same column order. The only difference is that Knoodle carries an explicit handedness column (\lstinline{+1} or \lstinline{-1}) which {\it Knoto-ID} encodes implicitly through the order of the arc labels. The bridge drops that column on import and omits it on export.
+\begin{lstlisting}
+from KnotoID.knoodle_bridge import from_knoodle, to_knoodle
+
+diagram = from_knoodle(ka)      # ka: a Knoodle KnotAnalyzer or a PD matrix
+ka2 = to_knoodle(diagram)       # a knotoID_cpp.PlanarDiagram -> Knoodle
+\end{lstlisting}
+\lstinline{from_knoodle(source, flag_planar=False)} accepts either a Knoodle \lstinline{KnotAnalyzer} or a plain PD matrix and returns a \lstinline{knotoID_cpp.PlanarDiagram}. \lstinline{to_knoodle(diagram, simplify=True, simplify_level=5)} returns a Knoodle \lstinline{KnotAnalyzer}. Only \lstinline{to_knoodle} requires the {\ttfamily pyknoodle} package to be installed.

@@ -96,6 +96,8 @@ By default, the polynomial invariant is the Jones polynomial for knotoids.
   Evaluate polynomial invariant for the knot(oid) diagram on a plane. If not specified, evaluate polynomial invariant for the knot(oid) diagram on the surface of a sphere. This option is only relevant for open curves (\lstinline{--closure-method=open}).
 \item[\lstinline{--arrow-polynomial}]\hfill\\
   Evaluate the arrow polynomial instead of Jones polynomial for knotoids (without \lstinline{--planar}) and loop arrow polynomial instead of Turaev loop bracket (with \lstinline{--planar}). This option is only relevant for open curves (\lstinline{--closure-method=open}).
+\item[\lstinline{--double-branched-cover}]\hfill\\
+  Evaluate the double branched cover invariant instead of the Turaev loop bracket. This invariant is the Jones polynomial (in variables $A$ and $v$) of the double branched cover of the planar knotoid, which is a knot in a solid torus\footnote{see section ``\ref{sec:theory:jones:dbc} \nameref{sec:theory:jones:dbc}'' for more details.}. It is only defined for planar knotoids, so this option requires \lstinline{--planar} and an open curve (\lstinline{--closure-method=open}). It cannot be combined with \lstinline{--arrow-polynomial}.
 \item[\lstinline{--nb-moves-III=NMOVES}]\hfill\\
   Use \lstinline{NMOVES} iterations to simplify the knot(oid) diagram using Reidemeister move III\footnote{see section  ``\ref{sec:algorithms:diagramsimplication} \nameref{sec:algorithms:diagramsimplication}'' for more details.}.\\
   Default \lstinline{100000}.

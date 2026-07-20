@@ -292,6 +292,13 @@ where $ \left [ k  \right ]_{\circ}$ is an evaluation of the diagram $k$ using t
 
 
 
+\subsubsection{\label{sec:theory:jones:dbc}Double branched cover invariant}
+This invariant is defined for planar knotoids. To a planar knotoid $k$ one associates its double branched cover, which is a knot living in a solid torus. The double branched cover invariant of $k$ is then the Jones polynomial of this knot in the solid torus.
+
+Because the ambient space is a solid torus rather than the plane or the sphere, the resulting polynomial carries an extra variable. In addition to the Kauffman bracket variable $A$, and much like the Turaev loop bracket, a second variable $v$ records how the components of a smoothing wrap around the core of the solid torus. The invariant is therefore a Laurent polynomial in the two variables $A$ and $v$. As for the other bracket polynomials, it is evaluated as a state sum over the $2^n$ smoothings of a diagram with $n$ crossings and is thus exponential in the number of crossings.
+
+The double branched cover invariant is computed by \lstinline{polynomial_invariant} with the option \lstinline{--double-branched-cover} (which requires \lstinline{--planar} and \lstinline{--closure-method=open}), and from the Python module through the function \lstinline{double_branched_cover_polynomial} (see section ``\ref{sec:python} \nameref{sec:python}'').
+
 \subsection{\label{sec:theory:notations}Notation Conventions}
 Knots have been tabulated in terms of number of crossings\cite{Rolfsen1976,Adams,dowker1983,hoste1998}. The standard notation is in the form $X_Y$ or $X\_ Y$, where $X$ is the number of crossings of the knot diagram in question and $Y$ corresponds to the position of the knot in the table among knots with the same number of crossings. For example, $5_2$ or $5\_2$ denotes the second knot in the knot table that has five crossings. An ``m'' is added at the end of a knot name when its mirror image is considered. The mirror image transforms a knot into a knot represented by the same diagrams with overpasses changed to underpasses and vice versa\cite{Adams}. For example $3_1^m$ or $3\_1m$ is the mirror image of the knot $3_1$. Additionally, we use * to denote the connected sum of two knots, for instance $3_1$*$5_2$ is the product between a $3_1$ and a $5_2$ knot.
 

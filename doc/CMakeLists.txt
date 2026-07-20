@@ -8,7 +8,7 @@ SET( LATEX_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 SET( texsourcemain "${CMAKE_CURRENT_SOURCE_DIR}/user_guide.tex" )
 SET( bibsource  "${CMAKE_CURRENT_SOURCE_DIR}/bibliography.bib" )
-SET( texsources "${CMAKE_CURRENT_SOURCE_DIR}/tutorial.tex" "${CMAKE_CURRENT_SOURCE_DIR}/reference.tex"  "${CMAKE_CURRENT_SOURCE_DIR}/theory.tex"  "${CMAKE_CURRENT_SOURCE_DIR}/bibliography.bib" )
+SET( texsources "${CMAKE_CURRENT_SOURCE_DIR}/tutorial.tex" "${CMAKE_CURRENT_SOURCE_DIR}/reference.tex"  "${CMAKE_CURRENT_SOURCE_DIR}/python.tex"  "${CMAKE_CURRENT_SOURCE_DIR}/theory.tex"  "${CMAKE_CURRENT_SOURCE_DIR}/bibliography.bib" )
 SET( variablessource_in "${CMAKE_CURRENT_SOURCE_DIR}/variables_cmake.tex.in")
 SET( variablessource "${CMAKE_CURRENT_BINARY_DIR}/variables_cmake.tex" )
 SET( texoutput "${CMAKE_CURRENT_BINARY_DIR}/user_guide.pdf" )
