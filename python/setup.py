@@ -6,55 +6,84 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 from pathlib import Path
 
 def find_boost_dirs():
-    """Try to locate Boost include and lib directories automatically."""
+    """Try to locate Boost include and lib directories automatically.
+
+    Detection order: explicit environment variables (BOOST_ROOT, or
+    BOOST_INCLUDEDIR / BOOST_LIBRARYDIR), then a conda environment, then
+    Homebrew (macOS), then pkg-config, then common system paths. Set
+    BOOST_ROOT (or BOOST_INCLUDEDIR / BOOST_LIBRARYDIR) to point at a Boost
+    installation in a non-standard location, e.g. on a server or an HPC
+    module.
+    """
     boost_include = None
     boost_lib = None
 
-    # Check if we are inside a conda environment
+    # 1. Explicit environment variables (highest priority).
+    include_env = os.getenv('BOOST_INCLUDEDIR')
+    lib_env = os.getenv('BOOST_LIBRARYDIR')
+    boost_root = os.getenv('BOOST_ROOT') or os.getenv('BOOSTROOT')
+    if include_env:
+        boost_include = include_env
+    elif boost_root:
+        if (Path(boost_root) / "include" / "boost").exists():
+            boost_include = str(Path(boost_root) / "include")
+        elif (Path(boost_root) / "boost").exists():
+            boost_include = boost_root
+    if lib_env:
+        boost_lib = lib_env
+    elif boost_root:
+        for cand in ("lib", "lib64", "stage/lib"):
+            if (Path(boost_root) / cand).exists():
+                boost_lib = str(Path(boost_root) / cand)
+                break
+
+    # 2. conda environment.
     conda_prefix = os.getenv('CONDA_PREFIX')
     if conda_prefix:
         conda_include = Path(conda_prefix) / "include"
         conda_lib = Path(conda_prefix) / "lib"
-        
-        if (conda_include / "boost").exists():
+        if not boost_include and (conda_include / "boost").exists():
             boost_include = str(conda_include)
-        if conda_lib.exists():
+        if not boost_lib and conda_lib.exists():
             boost_lib = str(conda_lib)
 
-    # macOS specific handling for Boost installed via Homebrew
+    # 3. macOS: Boost installed via Homebrew.
     if sys.platform == "darwin" and not boost_include:
         try:
-            # Default Homebrew Boost installation path
             homebrew_prefix = subprocess.check_output(
                 ['brew', '--prefix'], universal_newlines=True
             ).strip()
-            boost_include = Path(homebrew_prefix) / "include"
-            boost_lib = Path(homebrew_prefix) / "lib"
-
-            if not (boost_include / "boost").exists():
-                boost_include = None  # Boost is not installed
-            if not boost_lib.exists():
-                boost_lib = None
+            hb_include = Path(homebrew_prefix) / "include"
+            hb_lib = Path(homebrew_prefix) / "lib"
+            if (hb_include / "boost").exists():
+                boost_include = str(hb_include)
+                if not boost_lib and hb_lib.exists():
+                    boost_lib = str(hb_lib)
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
 
-    # Fallback: Try to find Boost using pkg-config (if installed)
+    # 4. pkg-config (only fills in what is still missing).
     if not boost_include or not boost_lib:
         try:
-            boost_include = subprocess.check_output(
+            inc = subprocess.check_output(
                 ['pkg-config', '--cflags-only-I', 'boost'],
                 universal_newlines=True
             ).strip().replace("-I", "")
-            boost_lib = subprocess.check_output(
+            lib = subprocess.check_output(
                 ['pkg-config', '--libs-only-L', 'boost'],
                 universal_newlines=True
             ).strip().replace("-L", "")
+            if inc and not boost_include:
+                boost_include = inc
+            if lib and not boost_lib:
+                boost_lib = lib
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
 
-    # Further fallback: Default to common system paths (Linux)
+    # 5. Common system paths. Boost headers live in /usr/include/boost, so the
+    #    include directory is /usr/include (the parent), not /usr/include/boost.
     if not boost_include:
-        boost_include = "/usr/include/boost"
+        boost_include = "/usr/include"
     if not boost_lib:
         boost_lib = "/usr/lib"
 
