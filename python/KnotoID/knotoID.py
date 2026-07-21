@@ -5,8 +5,7 @@ import random
 import time
 import json
 import knotoID_cpp as kn
-# import importlib.resources as pkg_resources
-import pkg_resources
+from importlib.resources import files, as_file
 import matplotlib.pyplot as plt
 import os
 import re
@@ -145,18 +144,15 @@ class KnotoID:
         }
 
 
-        file_path = pkg_resources.resource_filename('KnotoID', resources[data])
+        resource = files('KnotoID')
+        for part in resources[data].split('/'):
+            resource = resource / part
 
-        if data == 'projections':
-            return self.load_projections(file_path)
-        
-        return pd.read_csv(file_path, names=['Name', 'Polynomial'], sep="\t")
+        with as_file(resource) as file_path:
+            if data == 'projections':
+                return self.load_projections(str(file_path))
 
-        # with pkg_resources.open_text('KnotoID', resources[data]) as file:
-        #     if data == 'projections':
-        #         return self.load_projections(file.name)
-            
-        #     return pd.read_csv(file, names=['Name', 'Polynomial'], sep="\t")
+            return pd.read_csv(file_path, names=['Name', 'Polynomial'], sep="\t")
 
 
     def load_projections(self,filename):

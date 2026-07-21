@@ -1,18 +1,30 @@
+====================================================================
+Knoto-ID v1.4.0
+====================================================================
+
 New features:
 
 * New double branched cover invariant for planar knotoids: the Jones
   polynomial (in variables A and v) of the double branched cover, a knot
   in a solid torus. Available in polynomial_invariant via the new option
   --double-branched-cover (requires --planar and an open, non-cyclic
-  curve/diagram).
+  curve/diagram), and from the Python bindings as
+  double_branched_cover_polynomial.
 
-* New Python bindings (the Python package in python/, built with pybind11).
-  They expose the Polygon, PlanarDiagram, PolynomialInvariant and Polynomial
-  classes together with a high-level KnotoID class, add PD-code input and
-  export, the double branched cover invariant, a plotnine-based
-  plot_knotted_core reproducing the fingerprint and disk plots of the R
-  scripts, and an optional Knoodle interoperability bridge.
+* Python bindings (the KnotoID package in python/), built with pybind11.
+  They expose the Polygon, PlanarDiagram, PolynomialInvariant, Polynomial
+  and KnottedCore classes, add PD-code input (load_from_pd_code) and export
+  (to_pd_code), a Knoodle interoperability bridge (KnotoID.knoodle_bridge),
+  and a plotnine-based plot_knotted_core reproducing the fingerprint and
+  disk matrices of the R scripts.
 
+Bugs:
+
+* Fixed a crash when searching all subchains of a cyclic input curve from
+  the Python bindings.
+
+* C++ console output is now routed through Python's stdout/stderr so it can
+  be silenced by the Python bindings unless debug is enabled.
 
 ====================================================================
 Knoto-ID v1.3.0
