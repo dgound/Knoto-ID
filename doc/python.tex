@@ -127,7 +127,7 @@ The behaviour depends on the following arguments:
 In fingerprint mode the method returns a {\ttfamily plotnine} object, and in disk mode a {\ttfamily matplotlib} figure. The figure is written to \lstinline{output} in the format inferred from its extension.
 
 \subsection{\label{sec:python:cpp}The knotoID\_cpp module}
-The \lstinline{knotoID_cpp} module exposes the underlying C++ classes. It is useful when working directly with knot(oid) diagrams, for instance to load a diagram from a PD code and compute one of its invariants.
+The \lstinline{knotoID_cpp} module exposes the underlying C++ classes directly, rather than through the high-level \lstinline{KnotoID} class of section ``\ref{sec:python:knotoid} \nameref{sec:python:knotoid}''. It is useful when working directly with knot(oid) diagrams, for instance to load a diagram from a PD code and compute one of its invariants. The examples in this section and in sections ``\ref{sec:python:pd} \nameref{sec:python:pd}'' and ``\ref{sec:python:dbc} \nameref{sec:python:dbc}'' therefore import \lstinline{knotoID_cpp} rather than the \lstinline{KnotoID} package.
 
 The main classes are:
 \begin{description}

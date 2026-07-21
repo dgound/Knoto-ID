@@ -124,7 +124,9 @@ cd python
 pip install .
 ```
 
-Quick check (the 3_1 planar knotoid, from a PD code):
+Quick check. This uses the low-level `knotoID_cpp` module directly (not the
+high-level `KnotoID` class) to load the 3_1 planar knotoid from a PD code and
+compute two of its invariants:
 ```python
 import knotoID_cpp as kn
 
