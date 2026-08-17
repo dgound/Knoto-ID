@@ -1,6 +1,12 @@
 Knoto-ID
 ========
 
+> **Note:** The original repository at
+> [sib-swiss/Knoto-ID](https://github.com/sib-swiss/Knoto-ID) is no longer
+> maintained. Knoto-ID is now maintained and actively developed by
+> Dimos Goundaroulis in this repository,
+> <https://github.com/dgound/Knoto-ID>.
+
 The backbone of most proteins forms an open curve.  To study their
 entanglement, a common strategy consists in searching for the presence
 of knots in their backbones using topological invariants.  However,
@@ -31,9 +37,35 @@ classification of knotoids on the plane and on the sphere",
 arXiv:1902.07277 [math.GT].
 
 
-Precompiled binary distributions, with a user guide and examples, are
-available for Linux, Mac OS X and Windows at
-<https://github.com/sib-swiss/Knoto-ID/releases/latest>.
+Precompiled binary distributions of versions up to 1.3.0, with a user
+guide and examples, are available for Linux, Mac OS X and Windows at
+<https://github.com/sib-swiss/Knoto-ID/releases>. Starting with
+version 1.4.0, releases are published in this repository at
+<https://github.com/dgound/Knoto-ID/releases>.
+
+## What's new in version 1.4.0
+
+* New double branched cover invariant for planar knotoids: the Jones
+  polynomial (in variables A and v) of the double branched cover, a
+  knot in a solid torus. It is available in `polynomial_invariant` via
+  the new option `--double-branched-cover` (requires `--planar` and an
+  open, non-cyclic curve/diagram), and from the Python bindings as
+  `double_branched_cover_polynomial`.
+* New Python bindings (the `KnotoID` package in `python/`), built with
+  [pybind11](https://github.com/pybind/pybind11). They expose the
+  `Polygon`, `PlanarDiagram`, `PolynomialInvariant`, `Polynomial` and
+  `KnottedCore` classes, add PD code input (`load_from_pd_code`) and
+  export (`to_pd_code`), a Knoodle interoperability bridge
+  (`KnotoID.knoodle_bridge`), and a plotnine-based `plot_knotted_core`
+  reproducing the fingerprint and disk matrices of the R scripts. See
+  the [Python module](#python-module) section below for installation
+  instructions.
+* Fixed a crash when searching all subchains of a cyclic input curve
+  from the Python bindings.
+* C++ console output is now routed through Python's stdout/stderr so
+  it can be silenced by the Python bindings unless debug is enabled.
+
+See `RELEASE_NOTES.txt` for the full release history.
 
 ## Features
 
@@ -189,6 +221,10 @@ To output in [webGL](https://www.khronos.org/webgl/) format,
 
 
 ## Credits
+
+### Maintainer
+
+* Dimos Goundaroulis
 
 ### Contributors
 
